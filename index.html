@@ -270,6 +270,22 @@
                      placeholder="Mật khẩu" />
             </div>
 
+            <!-- NEW: mã phòng chơi chung -->
+            <div class="field" style="margin-top:8px;">
+              <input id="roomInput" type="text" maxlength="8"
+                     placeholder="Mã phòng chơi chung (vd: ROLA1, tối đa 4 máy, có thể bỏ trống)" />
+            </div>
+
+            <!-- NEW: link chia sẻ cho máy khác -->
+            <div class="field" style="margin-top:6px;">
+              <input id="shareInput" type="text" readonly
+                     onclick="this.select()"
+                     placeholder="Link chia sẻ cho máy khác (tự sinh khi nhập mã phòng)" />
+            </div>
+            <div class="muted" style="font-size:11px;margin-top:4px;">
+              ➜ Bước: nhập mã phòng → copy link này → gửi cho máy khác mở link + nhập cùng mã phòng.
+            </div>
+
             <div class="controls">
               <button class="btn" id="loginBtn">Đăng nhập</button>
               <button class="btn secondary" id="registerBtn">Đăng ký</button>
@@ -279,7 +295,7 @@
             <div class="muted" id="howText" style="display:none; margin-top:10px;">
               - Nhảy vừa phải để qua cột & hố nước (đã cân chỉnh).<br/>
               - Còn tim → hồi sinh tại chỗ an toàn, miễn nhiễm 3s.<br/>
-              - Hết 3 tim → Game Over, xếp hạng được lưu theo điểm.<br/>
+              - Hết 3 tim → Game Over, xếp hạng theo điểm cao nhất mỗi tài khoản.<br/>
               - Điện thoại nên xoay ngang để chơi full màn hình.
             </div>
 
@@ -288,10 +304,12 @@
 
           <div class="card leader">
             <h2>Xếp hạng (Top 10)</h2>
-            <div class="badge">Lưu trên trình duyệt (localStorage)</div>
+            <div class="badge">
+              Theo <b>điểm cao nhất</b> từng tài khoản, lưu trên thiết bị (localStorage).
+            </div>
             <ol id="leaderList"></ol>
             <div class="controls">
-              <button class="btn secondary" id="clearRankBtn">Xoá xếp hạng</button>
+              <button class="btn secondary" id="clearRankBtn">Xoá xếp hạng (trên thiết bị)</button>
             </div>
 
             <div style="margin-top:14px;">
@@ -311,7 +329,7 @@
             <h1>Danh sách</h1>
             <div class="muted">
               Tài khoản: <b id="listUser">—</b><br/>
-              Điều khiển: phím / nút ảo, mục tiêu là chạm vùng <b>GOAL</b> cuối map.
+              Mỗi lần chơi xong, điểm cao nhất của tài khoản này sẽ được lưu lại trên thiết bị.
             </div>
 
             <div class="controls" style="margin-top:12px;">
@@ -342,7 +360,7 @@
             <h2>Xếp hạng (Top 10)</h2>
             <ol id="leaderListIngame"></ol>
             <div class="controls">
-              <button class="btn secondary" id="clearRankBtn2">Xoá xếp hạng</button>
+              <button class="btn secondary" id="clearRankBtn2">Xoá xếp hạng (trên thiết bị)</button>
             </div>
           </div>
         </div>
@@ -371,8 +389,8 @@
 <script>
 /* =========================================================
    MINI MARIO — FULL SINGLE FILE (MOBILE + PC + MIT-FRIENDLY)
-   - Khung game full màn hình
-   - Mobile: chỉ có nút ← → bên trái, JUMP bên phải
+   + NÂNG CẤP LƯU TÀI KHOẢN + XẾP HẠNG THEO ĐIỂM CAO NHẤT
+   + PHÒNG CHƠI CHUNG (TỐI ĐA 4 MÁY) + LINK CHIA SẺ
    ========================================================= */
 
 const canvas = document.getElementById("game");
@@ -382,7 +400,6 @@ const TILE = 40;
 
 // auto-fit (chỉ scale CSS, logic vẫn dùng 960x540)
 function resizeCanvas(){
-  // canvas đã width:100%;height:100% qua CSS, nên chỉ cần tránh scroll
   document.body.style.overflow = "hidden";
 }
 window.addEventListener("resize", resizeCanvas);
@@ -404,6 +421,8 @@ const registerBtn  = document.getElementById("registerBtn");
 const userInput    = document.getElementById("userInput");
 const passInput    = document.getElementById("passInput");
 const authMsg      = document.getElementById("authMsg");
+const roomInput    = document.getElementById("roomInput");   // NEW
+const shareInput   = document.getElementById("shareInput");  // NEW
 
 const howBtn       = document.getElementById("howBtn");
 const howText      = document.getElementById("howText");
@@ -416,7 +435,7 @@ const backToGameBtn   = document.getElementById("backToGameBtn");
 const resumeBtn       = document.getElementById("resumeBtn");
 const restartLevelBtn = document.getElementById("restartLevelBtn");
 const logoutBtn       = document.getElementById("logoutBtn");
-const listUser         = document.getElementById("listUser");
+const listUser        = document.getElementById("listUser");
 
 const skinSelect    = document.getElementById("skinSelect");
 const saveSkinBtn   = document.getElementById("saveSkinBtn");
@@ -477,11 +496,163 @@ const aabb = (A,B)=> A.x < B.x+B.w && A.x+A.w > B.x && A.y < B.y+B.h && A.y+A.h 
 const fmt2 = n => String(n).padStart(2,"0");
 
 // ===== STORAGE KEYS =====
-const USERS_KEY = "mm_users_v1";
-const SESSION_KEY = "mm_session_v1";
-const RANK_KEY = "mm_rank_v1";
+const USERS_KEY = "mm_users_v1";      // danh sách tài khoản + thống kê
+const SESSION_KEY = "mm_session_v1";  // phiên đăng nhập hiện tại
+const RANK_KEY = "mm_rank_v1";        // lịch sử run cũ (giữ cho khỏi lỗi, nhưng không dùng hiển thị)
 const SKIN_KEY = "mm_skin_v1";
 
+// ===== SHARE LINK (LINK ĐỂ GỬI CHO MÁY KHÁC) ===== // NEW
+function getQueryParam(name){
+  const params = new URLSearchParams(window.location.search || "");
+  return params.get(name);
+}
+
+function updateShareLink(){
+  if(!shareInput) return;
+  let base = window.location.href.split("#")[0].split("?")[0];
+  const code = (roomInput?.value || "").trim().toUpperCase();
+  let link = base;
+  if(code){
+    link += "?room=" + encodeURIComponent(code);
+  }
+  shareInput.value = link;
+}
+
+// ===== MULTIPLAYER (PHÒNG CHƠI CHUNG TỐI ĐA 4 MÁY) =====
+// ⚠ Bạn phải dựng server WebSocket thực sự ở địa chỉ WS_URL.
+// Nếu chưa có server, hãy để trống "Mã phòng" để chơi offline bình thường.
+const WS_URL = "wss://YOUR_MINI_MARIO_SERVER_HERE"; // TODO: sửa thành server của bạn
+
+let ws = null;
+let wsConnected = false;
+let roomCode = "";
+let clientId = "c_" + Math.random().toString(36).slice(2, 8);
+let peers = {};
+
+function setupRoom(code){
+  roomCode = (code || "").trim().toUpperCase();
+}
+
+function connectWS(){
+  if(!roomCode) return; // không có mã phòng => không connect
+
+  if(ws){
+    try{ ws.close(); }catch(e){}
+    ws = null;
+  }
+
+  try{
+    ws = new WebSocket(WS_URL);
+  }catch(e){
+    console.warn("Không tạo được WebSocket:", e);
+    return;
+  }
+
+  wsConnected = false;
+
+  ws.onopen = () => {
+    wsConnected = true;
+    const msg = {
+      type: "join",
+      room: roomCode,
+      id: clientId,
+      name: userName,
+      skin: skinName
+    };
+    try{ ws.send(JSON.stringify(msg)); }catch(e){}
+  };
+
+  ws.onmessage = (ev) => {
+    let data;
+    try{ data = JSON.parse(ev.data); }catch(e){ return; }
+    if(!data || data.room !== roomCode) return;
+
+    const peerCount = Object.keys(peers).length;
+
+    if(data.type === "state" && data.id !== clientId){
+      if(!peers[data.id] && peerCount >= 3) return; // mình + 3 peer = tối đa 4 máy
+      peers[data.id] = {
+        name: data.name || "???",
+        x: data.x || 0,
+        y: data.y || 0,
+        facing: data.facing || 1,
+        skin: data.skin || "red",
+        score: data.score || 0,
+        level: data.level || 0,
+        lastSeen: performance.now()
+      };
+    }else if(data.type === "join" && data.id !== clientId){
+      if(!peers[data.id] && peerCount >= 3) return;
+      peers[data.id] = {
+        name: data.name || "???",
+        x: 0,
+        y: 0,
+        facing: 1,
+        skin: data.skin || "red",
+        score: 0,
+        level: 0,
+        lastSeen: performance.now()
+      };
+    }else if(data.type === "leave"){
+      delete peers[data.id];
+    }
+  };
+
+  ws.onclose = () => {
+    wsConnected = false;
+    ws = null;
+  };
+
+  ws.onerror = () => {
+    wsConnected = false;
+  };
+}
+
+let lastStateSent = 0;
+function sendMyState(){
+  if(!ws || !wsConnected || !roomCode) return;
+  const now = performance.now();
+  if(now - lastStateSent < 80) return; // ~12.5 lần/giây
+  lastStateSent = now;
+
+  const msg = {
+    type: "state",
+    room: roomCode,
+    id: clientId,
+    name: userName,
+    skin: skinName,
+    x: player.x,
+    y: player.y,
+    facing: player.facing,
+    score,
+    level: levelIndex
+  };
+  try{ ws.send(JSON.stringify(msg)); }catch(e){}
+}
+
+function cleanupPeers(){
+  const now = performance.now();
+  for(const id in peers){
+    if(now - peers[id].lastSeen > 8000){
+      delete peers[id];
+    }
+  }
+}
+
+function disconnectWS(){
+  if(ws){
+    try{
+      ws.send(JSON.stringify({ type:"leave", room:roomCode, id:clientId }));
+      ws.close();
+    }catch(e){}
+  }
+  ws = null;
+  wsConnected = false;
+  roomCode = "";
+  peers = {};
+}
+
+// STORAGE HELPERS
 function loadJSON(key, fallback){
   try{
     const raw = localStorage.getItem(key);
@@ -497,7 +668,7 @@ function saveJSON(key, val){
   }catch{}
 }
 
-// ===== AUTH / USERS =====
+// ===== USERS / SESSION =====
 function getUsers(){ return loadJSON(USERS_KEY, []); }
 function setUsers(list){ saveJSON(USERS_KEY, list); }
 function getSession(){ return loadJSON(SESSION_KEY, null); }
@@ -510,7 +681,73 @@ function showAuthMsg(t, ok=false){
   authMsg.style.color = ok ? "#22c55e" : "#fbbf24";
 }
 
+// ĐẢM BẢO 1 USER CÓ ĐỦ TRƯỜNG THỐNG KÊ
+function ensureUserStatsFor(name){
+  const users = getUsers();
+  const idx = users.findIndex(u=>u.user===name);
+  if(idx === -1) return;
+  const u = users[idx];
+  if(typeof u.bestScore !== "number") u.bestScore = 0;
+  if(typeof u.lastScore !== "number") u.lastScore = 0;
+  if(typeof u.playCount !== "number") u.playCount = 0;
+  if(typeof u.lastPlayed !== "number") u.lastPlayed = 0;
+  users[idx] = u;
+  setUsers(users);
+}
+
+// CẬP NHẬT THỐNG KÊ KHI KẾT THÚC GAME
+function updateUserStatsOnFinish(score){
+  if(!userName) return;
+  const users = getUsers();
+  const idx = users.findIndex(u=>u.user===userName);
+  if(idx === -1) return;
+  const u = users[idx];
+  const now = Date.now();
+  u.lastScore = score;
+  u.lastPlayed = now;
+  u.playCount = (u.playCount || 0) + 1;
+  if(typeof u.bestScore !== "number" || score > u.bestScore){
+    u.bestScore = score;
+  }
+  users[idx] = u;
+  setUsers(users);
+}
+
 // ===== LEADERBOARD =====
+function renderRank(ol){
+  const users = getUsers();
+  const ranked = users
+    .map(u => ({
+      name: u.user,
+      best: typeof u.bestScore === "number" ? u.bestScore : 0,
+      playCount: u.playCount || 0
+    }))
+    .filter(u => u.best > 0)
+    .sort((a,b)=> b.best - a.best)
+    .slice(0,10);
+
+  ol.innerHTML = "";
+  if(ranked.length===0){
+    const li=document.createElement("li");
+    li.style.color="#9ca3af";
+    li.textContent="Chưa có người chơi nào có điểm.";
+    ol.appendChild(li);
+    return;
+  }
+  ranked.forEach((item, i)=>{
+    const li=document.createElement("li");
+    const left=document.createElement("span");
+    const right=document.createElement("span");
+    left.textContent = `${i+1}. ${item.name}`;
+    right.textContent = item.best;
+    right.style.color="#fbbf24";
+    right.style.fontWeight="900";
+    li.appendChild(left); li.appendChild(right);
+    ol.appendChild(li);
+  });
+}
+
+// VẪN GIỮ CƠ CHẾ CŨ (LỊCH SỬ CHƠI) ĐỂ KHỎI LỖI, NHƯNG KHÔNG DÙNG HIỂN THỊ
 function loadRank(){ return loadJSON(RANK_KEY, []); }
 function saveRank(list){ saveJSON(RANK_KEY, list); }
 function addRank(name, score){
@@ -518,28 +755,6 @@ function addRank(name, score){
   list.push({ name, score, ts: Date.now() });
   list.sort((a,b)=> b.score - a.score || a.ts - b.ts);
   saveRank(list.slice(0,10));
-}
-function renderRank(ol){
-  const list = loadRank();
-  ol.innerHTML = "";
-  if(list.length===0){
-    const li=document.createElement("li");
-    li.style.color="#9ca3af";
-    li.textContent="Chưa có điểm.";
-    ol.appendChild(li);
-    return;
-  }
-  list.forEach(item=>{
-    const li=document.createElement("li");
-    const left=document.createElement("span");
-    left.textContent=item.name;
-    const right=document.createElement("span");
-    right.textContent=item.score;
-    right.style.color="#fbbf24";
-    right.style.fontWeight="900";
-    li.appendChild(left); li.appendChild(right);
-    ol.appendChild(li);
-  });
 }
 
 // ===== AUDIO =====
@@ -1508,22 +1723,26 @@ function nextLevel(){
   resetLevelToCurrent(true,true);
 }
 
+// ===== END GAME: CẬP NHẬT THỐNG KÊ USER + RANK =====
 function endGame(won){
   state="end";
   topButtons.style.display="none";
   hud.style.display="none";
   listOverlay.style.display="none";
+
+  updateUserStatsOnFinish(score);
   addRank(userName, score);
   renderRank(leaderList);
   renderRank(leaderList2);
   renderRank(leaderListIngame);
+
   endOverlay.style.display="flex";
   if(won){
     endTitle.textContent="YOU WIN!";
-    endDesc.textContent=`Chúc mừng @${userName}! Tổng điểm: ${score}.`;
+    endDesc.textContent=`Chúc mừng @${userName}! Tổng điểm: ${score}. Điểm cao nhất của bạn đã được lưu trên thiết bị.`;
   }else{
     endTitle.textContent="GAME OVER";
-    endDesc.textContent=`@${userName} hết tim. Tổng điểm: ${score}.`;
+    endDesc.textContent=`@${userName} hết tim. Tổng điểm: ${score}. Điểm cao nhất của bạn đã được lưu trên thiết bị.`;
     sfxDeath();
   }
   stopAmbience();
@@ -1894,6 +2113,50 @@ function drawPlayer(){
   }
 }
 
+// NEW: Vẽ các người chơi khác trong phòng (ghost)
+function drawPeers(){
+  for(const id in peers){
+    const p = peers[id];
+    if(p.level !== levelIndex) continue;
+    const skin = SKINS[p.skin] || SKINS.red;
+    const px = Math.round(p.x - cameraX);
+    const py = Math.round(p.y);
+    if(px < -60 || px > W+60) continue;
+
+    ctx.save();
+    ctx.globalAlpha = 0.65;
+
+    ctx.fillStyle="rgba(0,0,0,.20)";
+    ctx.beginPath();
+    ctx.ellipse(px + 14, py + 40, 16, 6, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = skin.pants;
+    ctx.fillRect(px+4, py+28, 6, 10);
+    ctx.fillRect(px+16, py+28, 6, 10);
+
+    ctx.fillStyle = skin.shirt;
+    ctx.fillRect(px, py+4, 28, 16);
+
+    ctx.fillStyle = skin.pants;
+    ctx.fillRect(px, py+20, 28, 10);
+
+    ctx.fillStyle = skin.hat;
+    ctx.fillRect(px-2, py-6, 32, 10);
+
+    ctx.fillStyle = skin.skin;
+    const fx = p.facing===1 ? px+16 : px+2;
+    ctx.fillRect(fx, py+10, 10, 10);
+
+    ctx.restore();
+
+    const label = (p.name || "Player").slice(0, 12);
+    ctx.font = "10px system-ui";
+    ctx.fillStyle = "#e5e7eb";
+    ctx.fillText(label, px-4, py-10);
+  }
+}
+
 // MAIN LOOP
 function update(){
   ctx.clearRect(0,0,W,H);
@@ -1912,6 +2175,11 @@ function update(){
     updateCrocs();
     updateBirds();
     updatePlayer();
+
+    // NEW: gửi trạng thái của mình + dọn peer cũ
+    sendMyState();
+    cleanupPeers();
+
     if(keys.has("KeyR") || touchReset){
       resetLevelToCurrent(true,true);
       showMsg("Reset màn!", 40);
@@ -1943,6 +2211,7 @@ function update(){
   drawWorld();
   if(state==="playing" || state==="paused" || state==="list" || state==="levelclear"){
     drawPlayer();
+    drawPeers(); // NEW
   }
 
   requestAnimationFrame(update);
@@ -1960,6 +2229,7 @@ function showStart(){
   renderRank(leaderList2);
   renderRank(leaderListIngame);
   stopAmbience();
+  disconnectWS(); // NEW
 }
 function openList(){
   if(state!=="playing" && state!=="paused") return;
@@ -2000,6 +2270,7 @@ restartLevelBtn.addEventListener("click", ()=>{
 });
 logoutBtn.addEventListener("click", ()=>{
   clearSession();
+  disconnectWS(); // NEW
   showStart();
 });
 saveSkinBtn.addEventListener("click", ()=>{
@@ -2012,24 +2283,32 @@ saveSkinBtn.addEventListener("click", ()=>{
 backToStartBtn.addEventListener("click", ()=> showStart());
 playAgainBtn.addEventListener("click", ()=> startGameFresh());
 
-clearRankBtn.addEventListener("click", ()=>{
+// CLEAR RANK
+function clearAllRankAndStats(){
   try{ localStorage.removeItem(RANK_KEY); }catch{}
+  const users = getUsers().map(u => ({
+    user: u.user,
+    pass: u.pass,
+    bestScore: 0,
+    lastScore: 0,
+    playCount: 0,
+    lastPlayed: 0
+  }));
+  setUsers(users);
   renderRank(leaderList);
   renderRank(leaderList2);
   renderRank(leaderListIngame);
-});
-clearRankBtn2.addEventListener("click", ()=>{
-  try{ localStorage.removeItem(RANK_KEY); }catch{}
-  renderRank(leaderList);
-  renderRank(leaderList2);
-  renderRank(leaderListIngame);
-});
+}
 
-// AUTH
+clearRankBtn.addEventListener("click", clearAllRankAndStats);
+clearRankBtn2.addEventListener("click", clearAllRankAndStats);
+
+// ===== AUTH =====
 function login(user, pass){
   const users = getUsers();
   const found = users.find(u=>u.user===user && u.pass===pass);
   if(!found) return false;
+  ensureUserStatsFor(found.user);
   setSession({ user });
   return true;
 }
@@ -2037,17 +2316,39 @@ function register(user, pass){
   if(user.length<2 || pass.length<3) return { ok:false, msg:"Tên >=2 ký tự, mật khẩu >=3 ký tự." };
   const users = getUsers();
   if(users.some(u=>u.user===user)) return { ok:false, msg:"Tài khoản đã tồn tại." };
-  users.push({ user, pass });
+  users.push({
+    user,
+    pass,
+    bestScore: 0,
+    lastScore: 0,
+    playCount: 0,
+    lastPlayed: 0
+  });
   setUsers(users);
   setSession({ user });
   return { ok:true, msg:"Đăng ký thành công!" };
 }
 function afterAuth(user){
   userName = user;
+  ensureUserStatsFor(userName);
   const map = getSkinMap();
   skinName = map[userName] || "red";
+
+  // NEW: đọc mã phòng & cập nhật link
+  const roomVal = (roomInput?.value || "").trim();
+  setupRoom(roomVal);
+  updateShareLink();
+
   startGameFresh();
   syncAmbienceToLevel();
+
+  // NEW: nếu có mã phòng => kết nối WS
+  if(roomCode){
+    connectWS();
+    showMsg(`Đã vào phòng ${roomCode} (tối đa 4 người).`, 80);
+  }else{
+    disconnectWS();
+  }
 }
 loginBtn.addEventListener("click", ()=>{
   ensureAudio();
@@ -2114,9 +2415,23 @@ function init(){
   renderRank(leaderList2);
   renderRank(leaderListIngame);
   setupTouchControls();
+
+  // NEW: lắng nghe thay đổi mã phòng để cập nhật link chia sẻ
+  if(roomInput){
+    roomInput.addEventListener("input", updateShareLink);
+  }
+
+  // NEW: nếu URL có ?room=... thì auto điền & update link
+  const urlRoom = getQueryParam("room");
+  if(urlRoom && roomInput){
+    roomInput.value = urlRoom.toUpperCase();
+  }
+  updateShareLink();
+
   const s = getSession();
   if(s && s.user){
     userName = s.user;
+    ensureUserStatsFor(userName);
     const map = getSkinMap();
     skinName = map[userName] || "red";
     startGameFresh();
