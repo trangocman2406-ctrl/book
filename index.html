@@ -302,7 +302,7 @@
             <div class="muted" id="howText" style="display:none; margin-top:10px;">
               - Portal là hố đen: chui vào để sang map đặc biệt (biển / trời).<br/>
               - Biển: thu 5 ngọc trai để quay lại (+bất tử). Trời: thu 5 chim để quay lại (+tim + đạn).<br/>
-              - Shop: tích xu khi chơi để mua nhân vật (mỗi nhân vật có skill riêng, hồi 60s).
+              - Shop: tích xu khi chơi để mua nhân vật (mỗi nhân vật có skill riêng, hồi 30s; riêng TÍM 60s).
             </div>
           </div>
 
@@ -344,8 +344,8 @@
             <div class="card" style="margin-top:12px;">
               <h2>Kỹ năng</h2>
               <div class="muted">
-                PC: bấm <span class="kbd">X</span> • Mobile: nút <b>SKILL</b> • Hồi chiêu <b>60s</b>.<br/>
-                Xanh: bất tử • Vàng: xoá vật thể trước mặt • Đen: tốc biến • Tím: ngẫu nhiên • Đỏ: nhảy cao +1 tim.
+                PC: bấm <span class="kbd">X</span> • Mobile: nút <b>SKILL</b> • Hồi chiêu <b>30s</b> (riêng <b>TÍM 60s</b>).<br/>
+                Xanh: bất tử • Vàng: xoá vật thể trước mặt (3m) • Đen: xuyên cột 6s • Tím: cưỡi rắn (tăng tốc + lá chắn) • Đỏ: nhảy cao +1 tim.
               </div>
             </div>
           </div>
@@ -374,7 +374,7 @@
               <button class="btn" id="closeShopBtn">⬅ Đóng</button>
             </div>
             <div class="muted" style="margin-top:10px;">
-              Mua xong bấm <b>CHỌN</b> để đổi nhân vật. Đổi nhân vật sẽ reset hồi skill (60s) để tránh lách.
+              Mua xong bấm <b>CHỌN</b> để đổi nhân vật. Đổi/mua sẽ <b>READY skill ngay</b>.
             </div>
           </div>
           <div class="card">
@@ -533,7 +533,11 @@ function updateUserRecord(name, updater){
 }
 
 const CHAR_COST = 30;
-const SKILL_CD_FRAMES = 60*60;
+
+// CD: mặc định 30s; riêng tím 60s
+function skillCdFramesForChar(id){
+  return (id==="purple") ? 60*60 : 30*60;
+}
 
 const CHARACTERS = {
   red:{
@@ -554,21 +558,21 @@ const CHARACTERS = {
     id:"gold",
     name:"VÀNG",
     price:CHAR_COST,
-    desc:"Skill: Xoá vật thể trước mặt",
+    desc:"Skill: Xoá vật thể trước mặt (3m)",
     colors:{hat:"#a16207",shirt:"#f59e0b",pants:"#2563eb",skin:"#fde68a",outline:"rgba(0,0,0,.25)",fx:"#fbbf24"},
   },
   black:{
     id:"black",
     name:"ĐEN",
     price:CHAR_COST,
-    desc:"Skill: Tốc biến (vượt nước/obstacle)",
+    desc:"Skill: Xuyên cột 6s (không xuyên xuống đất)",
     colors:{hat:"#111827",shirt:"#0b1220",pants:"#1f2937",skin:"#fde68a",outline:"rgba(255,255,255,.08)",fx:"#94a3b8"},
   },
   purple:{
     id:"purple",
     name:"TÍM",
     price:CHAR_COST,
-    desc:"Skill: Ngẫu nhiên (buff + rơi xu)",
+    desc:"Skill: Cưỡi rắn (tăng tốc + lá chắn) — CD 60s",
     colors:{hat:"#6d28d9",shirt:"#8b5cf6",pants:"#0ea5e9",skin:"#fde68a",outline:"rgba(0,0,0,.25)",fx:"#a78bfa"},
   }
 };
@@ -898,7 +902,10 @@ function makePlayer(){
     invincibleFrames:0,jump2Frames:0,immuneFrames:0,slowFrames:0,
     runTick:0,stepSwap:false,runDustTick:0,
     safeX:80,safeY:0,safeCamX:0,
-    portalLock:0
+    portalLock:0,
+    phaseFrames:0,      // ĐEN: xuyên cột
+    snake:false,        // TÍM: cưỡi rắn
+    snakeFlash:0
   };
 }
 function makeEnemy(x,y){ return{x,y,w:30,h:26,vx:-0.6,vy:0,alive:true}; }
@@ -1115,7 +1122,7 @@ function decorateGrid(base,levelNo){
     }
   }
 
-  /* FIX MAP 2 nhẹ (như code bạn) */
+  /* FIX MAP 2 nhẹ */
   if(levelNo===2){
     for(let c=8;c<=18;c++){
       setCell(base,rows-2,c,"#");
@@ -1201,7 +1208,10 @@ function heartSVG(f=true){
   const fill=f?"#ef4444":"rgba(239,68,68,.22)";
   return `<svg class="heart" viewBox="0 0 24 24"><path fill="${fill}" d="M12 21s-7.2-4.6-9.6-9C.6 8.2 2.5 5.5 5.6 5.1c1.8-.2 3.5.6 4.4 2 1-1.4 2.6-2.2 4.4-2 3.1.4 5 3.1 3.2 6.9C19.2 16.4 12 21 12 21z"/></svg>`;
 }
-function skillLeftFrames(){ return Math.max(0, SKILL_CD_FRAMES - (playFrames - lastSkillFrame)); }
+function skillLeftFrames(){
+  const cd = skillCdFramesForChar(charId);
+  return Math.max(0, cd - (playFrames - lastSkillFrame));
+}
 function charMeta(){ return CHARACTERS[charId]||CHARACTERS.red; }
 
 function renderHUD(){
@@ -1237,6 +1247,8 @@ function renderHUD(){
   if(activeP && activeP.immuneFrames>0) buffs.push(`Miễn nhiễm ${Math.ceil(activeP.immuneFrames/60)}s`);
   if(activeP && activeP.jump2Frames>0) buffs.push(`Nhảy cao ${Math.ceil(activeP.jump2Frames/60)}s`);
   if(activeP && activeP.slowFrames>0) buffs.push(`Chậm ${Math.ceil(activeP.slowFrames/60)}s`);
+  if(activeP && activeP.phaseFrames>0) buffs.push(`Xuyên cột ${Math.ceil(activeP.phaseFrames/60)}s`);
+  if(activeP && activeP.snake) buffs.push(`Rắn hộ vệ`);
 
   hudBuff.textContent=buffs.length?("• "+buffs.join(" | ")):"—";
   hudAmmo.textContent = `Ammo: ${ammo}`;
@@ -1254,8 +1266,13 @@ function renderHUD(){
 }
 
 /* SOLIDS / POWERUP */
-function allSolids(){
-  const solids=level.solidTiles.slice();
+function allSolids(ent=null){
+  const solids=[];
+  for(const t of level.solidTiles){
+    // ĐEN: xuyên cột (chỉ bỏ qua cột destruct, không bỏ qua nền)
+    if(ent===player && player.phaseFrames>0 && t.destruct) continue;
+    solids.push(t);
+  }
   for(const b of level.blocks) solids.push({x:b.x,y:b.y,w:b.w,h:b.h,_block:b});
   for(const s of level.slowBoxes) solids.push({x:s.x,y:s.y,w:s.w,h:s.h,_slow:s});
   return solids;
@@ -1311,7 +1328,7 @@ function moveAndCollide(ent){
   ent.onGround=false;
 
   ent.x+=ent.vx;
-  for(const s of allSolids()){
+  for(const s of allSolids(ent)){
     if(aabb(ent,s)){
       if(ent.vx>0) ent.x=s.x-ent.w;
       else if(ent.vx<0) ent.x=s.x+s.w;
@@ -1321,7 +1338,7 @@ function moveAndCollide(ent){
   }
 
   ent.y+=ent.vy;
-  for(const s of allSolids()){
+  for(const s of allSolids(ent)){
     if(aabb(ent,s)){
       if(ent.vy>0){ ent.y=s.y-ent.h; ent.vy=0; ent.onGround=true; }
       else if(ent.vy<0){
@@ -1335,7 +1352,7 @@ function moveAndCollide(ent){
     spawnGrass(ent.x+ent.w/2,ent.y+ent.h,Math.round(prevVy*1.2));
   }
 
-  for(const s of allSolids()){
+  for(const s of allSolids(ent)){
     if(s._slow && s._slow.active && aabb(ent,s)){
       ent.slowFrames=Math.max(ent.slowFrames,60*2);
       showMsg("Dính hộp đen: CHẬM!",40);
@@ -1350,7 +1367,7 @@ function updateEnemy(e){
   e.vy=clamp(e.vy,-20,MAX_FALL);
 
   e.x+=e.vx;
-  for(const s of allSolids()){
+  for(const s of allSolids(null)){
     if(aabb(e,s)){
       if(e.vx>0) e.x=s.x-e.w; else e.x=s.x+s.w;
       e.vx*=-1;
@@ -1359,7 +1376,7 @@ function updateEnemy(e){
 
   e.y+=e.vy;
   let grounded=false;
-  for(const s of allSolids()){
+  for(const s of allSolids(null)){
     if(aabb(e,s)){
       if(e.vy>0){ e.y=s.y-e.h; e.vy=0; grounded=true; }
       else if(e.vy<0){ e.y=s.y+s.h; e.vy=0; }
@@ -1371,7 +1388,7 @@ function updateEnemy(e){
     const footY=e.y+e.h+2;
     const probe={x:aheadX,y:footY,w:2,h:2};
     let hasGround=false;
-    for(const s of allSolids()){ if(aabb(probe,s)){hasGround=true;break;} }
+    for(const s of allSolids(null)){ if(aabb(probe,s)){hasGround=true;break;} }
     if(!hasGround) e.vx*=-1;
   }
 }
@@ -1389,7 +1406,7 @@ function updateTurrets(){
   for(const d of darts){
     if(!d.alive) continue;
     d.x+=d.vx;
-    for(const s of allSolids()){
+    for(const s of allSolids(null)){
       if(aabb(d,s)){ d.alive=false; break; }
     }
     if(d.alive && aabb(player,d)){
@@ -1496,10 +1513,23 @@ function spawnSkillFx(x,y,color){
   if(state==="sky" && sky){ for(let i=0;i<10;i++) sky.sparkle.push({x,y,vx:(Math.random()*2-1)*2.0,vy:(Math.random()*2-1)*2.0,life:18+Math.random()*14,r:1.5+Math.random()*2.2,color}); return; }
   spawnSparkle(x,y,color);
 }
+
+function consumeSnake(reason){
+  if(!player.snake) return false;
+  player.snake=false;
+  player.snakeFlash=30;
+  player.immuneFrames=Math.max(player.immuneFrames,60*3);
+  player.invincibleFrames=Math.max(player.invincibleFrames,60*2);
+  showMsg(`RẮN ĐỠ ĐÒN! (${reason||"Bảo vệ"})`, 90);
+  spawnSkillFx(player.x+player.w/2, player.y+player.h/2, "#22c55e");
+  spawnSkillFx(player.x+player.w/2, player.y+player.h/2, "#a78bfa");
+  return true;
+}
+
 function goldClearFront(){
   const p=player;
   const dir=p.facing;
-  const range=6*TILE;
+  const range=3*TILE; // 3m
   const x0 = (dir===1)? p.x+p.w : p.x-range;
   const x1 = (dir===1)? p.x+p.w+range : p.x;
   const y0 = p.y-2*TILE;
@@ -1522,67 +1552,31 @@ function goldClearFront(){
     const t=level.turrets[i];
     if(t.x>=x0-2 && t.x<=x1+2 && t.y>=y0 && t.y<=y1){ level.turrets.splice(i,1); removed++; }
   }
-  for(const e of level.enemies){
-    if(!e.alive) continue;
-    if(e.x>=x0-10 && e.x<=x1+10 && e.y>=y0 && e.y<=y1){ e.alive=false; removed++; addScore(60); }
-  }
-
+  // KHÔNG xoá quái vật nữa (fix)
   addScore(removed*25);
-  showMsg(`VÀNG: Xoá vật thể trước mặt (+${removed*25})`, 80);
+  showMsg(`VÀNG: Xoá vật thể 3m (+${removed*25})`, 80);
   spawnSkillFx(p.x+p.w/2, p.y+p.h/2, "#fbbf24");
 }
-function blackDash(){
-  const p=player;
-  const dir=p.facing;
-  const dist=8*TILE;
-  const step=10;
-  let bestX=p.x;
-  for(let i=1;i<=Math.floor(dist/step);i++){
-    const tx=p.x + dir*i*step;
-    const test={x:tx,y:p.y,w:p.w,h:p.h};
-    let coll=false;
-    for(const s of allSolids()){ if(aabb(test,s)){ coll=true; break; } }
-    if(coll) break;
 
-    let inWater=false;
-    for(const w of level.waters){
-      if(aabb(test,{x:w.x,y:w.y,w:w.w,h:w.h})){ inWater=true; break; }
-    }
-    if(inWater) continue;
-    bestX=tx;
-  }
-  p.x=clamp(bestX,0,level.width-p.w);
-  p.immuneFrames=Math.max(p.immuneFrames,60*3);
-  p.invincibleFrames=Math.max(p.invincibleFrames,60*2);
-  showMsg("ĐEN: TỐC BIẾN!", 70);
-  spawnSkillFx(p.x+p.w/2,p.y+p.h/2,"#94a3b8");
+function blackPhase(){
+  // Xuyên cột 6s: bỏ qua destruct tiles khi va chạm (không xuyên nền)
+  player.phaseFrames = Math.max(player.phaseFrames, 60*6);
+  player.immuneFrames = Math.max(player.immuneFrames, 60*2);
+  showMsg("ĐEN: XUYÊN CỘT 6s!", 90);
+  spawnSkillFx(player.x+player.w/2, player.y+player.h/2, "#94a3b8");
 }
-function purpleChaos(){
-  const p=getActivePlayer();
-  // rơi thêm xu + buff ngẫu nhiên
-  addCoins(6);
-  if(state==="playing"){
-    for(let i=0;i<10;i++){
-      popCoins.push({x:p.x+Math.random()*140-70,y:p.y-30-Math.random()*80,w:16,h:16,vy:-6-Math.random()*3,life:50+Math.random()*20});
-    }
-  }
-  const r=Math.floor(Math.random()*3);
-  if(r===0){
-    p.invincibleFrames=Math.max(p.invincibleFrames||0,60*8);
-    showMsg("TÍM: Ngẫu nhiên → BẤT TỬ (8s) +6 xu", 90);
-  }else if(r===1){
-    if("jump2Frames" in p) p.jump2Frames=Math.max(p.jump2Frames||0,60*8);
-    showMsg("TÍM: Ngẫu nhiên → NHẢY CAO (8s) +6 xu", 90);
-  }else{
-    const before=lives;
-    lives=clamp(lives+2,0,MAX_LIVES);
-    showMsg(`TÍM: Ngẫu nhiên → +${lives-before} TIM +6 xu`, 90);
-  }
-  spawnSkillFx((p.x||0)+(p.w||28)/2, (p.y||0)+(p.h||38)/2, "#a78bfa");
-  spawnSkillFx((p.x||0)+(p.w||28)/2, (p.y||0)+(p.h||38)/2, "#fbbf24");
+
+function purpleSnake(){
+  if(state!=="playing"){ showMsg("TÍM: chỉ dùng ở map chính.", 50); return; }
+  player.snake=true;
+  player.snakeFlash=0;
+  showMsg("TÍM: CƯỠI RẮN! (tăng tốc + lá chắn)", 110);
+  spawnSkillFx(player.x+player.w/2, player.y+player.h/2, "#a78bfa");
+  spawnSkillFx(player.x+player.w/2, player.y+player.h/2, "#22c55e");
 }
+
 function redHero(){
-  if(state!=="playing"){ // map đặc biệt: đổi sang khiên
+  if(state!=="playing"){ // map đặc biệt: khiên
     const p=getActivePlayer();
     p.invincibleFrames=Math.max(p.invincibleFrames||0,60*7);
     p.immuneFrames=Math.max(p.immuneFrames||0,60*4);
@@ -1605,7 +1599,8 @@ function greenInv(){
 }
 function useSkill(){
   if(!(state==="playing"||state==="underwater"||state==="sky")) return;
-  const left=skillLeftFrames();
+  const cd = skillCdFramesForChar(charId);
+  const left=Math.max(0, cd - (playFrames - lastSkillFrame));
   if(left>0){ showMsg(`Kỹ năng còn ${Math.ceil(left/60)}s`, 40); return; }
 
   // vàng chỉ dùng map chính
@@ -1617,17 +1612,16 @@ function useSkill(){
   if(charId==="green") greenInv();
   else if(charId==="gold") goldClearFront();
   else if(charId==="black"){
-    if(state==="playing") blackDash();
+    if(state==="playing") blackPhase();
     else{
       const p=getActivePlayer();
       p.immuneFrames=Math.max(p.immuneFrames||0,60*3);
       p.invincibleFrames=Math.max(p.invincibleFrames||0,60*2);
-      p.x = clamp((p.x||0) + (p.facing||1)*220, 20, (state==="underwater"&&uw)?(uw.w-20-p.w):((state==="sky"&&sky)?(sky.w-20-p.w):(p.x||0)));
-      showMsg("ĐEN: TỐC BIẾN!", 70);
+      showMsg("ĐEN: KHIÊN 2s (map đặc biệt)", 70);
       spawnSkillFx((p.x||0)+(p.w||28)/2, (p.y||0)+(p.h||38)/2, "#94a3b8");
     }
   }
-  else if(charId==="purple") purpleChaos();
+  else if(charId==="purple") purpleSnake();
   else redHero();
 }
 
@@ -1651,12 +1645,18 @@ function updatePlayer(){
   shootPressedLast = shootKey;
   if(justShoot) shoot();
 
- const baseMaxSpeed = 1.85,   // chậm rõ rệt
-      accel = 0.10,          // tăng tốc chậm
-      frictionGround = 0.86, // dừng êm hơn
-      frictionAir = 0.96;    // giữ nguyên trên không
+  let baseMaxSpeed = 1.85,
+      accel = 0.10,
+      frictionGround = 0.86,
+      frictionAir = 0.96;
 
-let maxSpeed = baseMaxSpeed;
+  // TÍM: cưỡi rắn tăng tốc chạy
+  if(player.snake){
+    baseMaxSpeed *= 1.65;
+    accel *= 1.25;
+  }
+
+  let maxSpeed = baseMaxSpeed;
   if(player.slowFrames>0) maxSpeed*=0.55;
 
   if(left){ player.vx-=accel; player.facing=-1; }
@@ -1722,6 +1722,8 @@ let maxSpeed = baseMaxSpeed;
   if(player.immuneFrames>0) player.immuneFrames--;
   if(player.slowFrames>0) player.slowFrames--;
   if(player.portalLock>0) player.portalLock--;
+  if(player.phaseFrames>0) player.phaseFrames--;
+  if(player.snakeFlash>0) player.snakeFlash--;
 
   for(const c of level.coins){
     if(!c.taken && aabb(player,c)){
@@ -1768,6 +1770,12 @@ let maxSpeed = baseMaxSpeed;
   }
 
   if(playerInWater()){
+    if(player.snake){
+      consumeSnake("Rơi xuống nước");
+      player.vy = -9.2;
+      player.y -= 10;
+      return;
+    }
     if(player.invincibleFrames>0 || player.immuneFrames>0){
       showMsg("Khiên: không chết vì nước!", 22);
       player.vy = -8.5;
@@ -1801,7 +1809,7 @@ function enterUnderwaterByPortal(){
   state="underwater";
   uw = { w: 2200, h: 800, camX: 0, pearls: [], enemies: [], collected: 0, returnPack: ret, bubbles: [], sparkle: [], titleFrames: 90 };
 
-  const p = { x: 80, y: 260, w: 28, h: 38, vx: 0, vy: 0, facing: 1, invincibleFrames: player.invincibleFrames, immuneFrames: Math.max(player.immuneFrames, 60*2) };
+  const p = { x: 80, y: 260, w: 28, h: 38, vx: 0, vy: 0, facing: 1, invincibleFrames: player.invincibleFrames, immuneFrames: Math.max(player.immuneFrames, 60*2), phaseFrames:0, snake:false };
   uw.player = p;
 
   const spots = [{x:420,y:220},{x:760,y:360},{x:1120,y:180},{x:1480,y:300},{x:1820,y:240}];
@@ -2161,15 +2169,16 @@ function drawUnderwater(){
 function makeSkyBird(x,y){ return {x,y,w:18,h:14,taken:false,wing:Math.random()*6.28}; }
 function makeSkyEnemy(x,y){
   const dir = Math.random()<0.5?-1:1;
-  return {x,y,w:30,h:18,vx:dir*(1.8+Math.random()*1.0),t:Math.random()*999,alive:true,hitCd:0};
+  const kind = (Math.random()<0.5) ? "plane" : "dino";
+  return {kind,x,y,w:34,h:18,vx:dir*(2.0+Math.random()*1.2),t:Math.random()*999,alive:true,hitCd:0};
 }
 function enterSkyByPortal(){
   const ret = { levelIndex, camX: cameraX, safeX: player.safeX, safeY: player.safeY, safeCamX: player.safeCamX, px: player.x, py: player.y };
 
   state="sky";
-  sky = { w: 2400, h: 640, camX: 0, birds: [], enemies: [], collected: 0, returnPack: ret, sparkle: [], clouds: [], titleFrames: 90 };
+  sky = { w: 2400, h: 640, camX: 0, birds: [], enemies: [], collected: 0, returnPack: ret, sparkle: [], clouds: [], titleFrames: 90, decorT:0 };
 
-  const p = { x: 80, y: 320, w: 28, h: 38, vx: 0, vy: 0, facing: 1, invincibleFrames: player.invincibleFrames, immuneFrames: Math.max(player.immuneFrames, 60*2) };
+  const p = { x: 80, y: 320, w: 28, h: 38, vx: 0, vy: 0, facing: 1, invincibleFrames: player.invincibleFrames, immuneFrames: Math.max(player.immuneFrames, 60*2), phaseFrames:0, snake:false };
   sky.player = p;
 
   const spots = [{x:460,y:260},{x:820,y:360},{x:1160,y:220},{x:1580,y:300},{x:1980,y:260}];
@@ -2254,6 +2263,7 @@ function skyUpdate(){
   p.y = clamp(p.y, 70, sky.h-90-p.h);
 
   sky.camX = clamp(p.x - W*0.35, 0, Math.max(0, sky.w - W));
+  sky.decorT += 0.012;
 
   for(const bd of sky.birds){
     if(bd.taken) continue;
@@ -2277,7 +2287,7 @@ function skyUpdate(){
     if(!e.alive) continue;
     e.t += 0.02;
     e.x += e.vx;
-    e.y += Math.sin(e.t*2.2)*0.35;
+    e.y += Math.sin(e.t*2.2)*0.55;
 
     if(e.x<40 || e.x>sky.w-40) e.vx*=-1;
 
@@ -2318,15 +2328,40 @@ function drawSky(){
   ctx.fillStyle=g;
   ctx.fillRect(0,0,W,H);
 
+  // nắng nhẹ
+  ctx.fillStyle="rgba(255,255,255,.22)";
+  ctx.beginPath(); ctx.arc(W-120,92,40,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="rgba(253,224,71,.92)";
+  ctx.beginPath(); ctx.arc(W-124,96,32,0,Math.PI*2); ctx.fill();
+
+  // mây
   for(let i=0;i<14;i++){
     const x = (i*200 - (camX*0.35)%200);
     const y = 80 + (i%4)*60 + Math.sin((performance.now()*0.001)+i)*8;
-    ctx.fillStyle="rgba(255,255,255,.35)";
+    ctx.fillStyle="rgba(255,255,255,.38)";
     ctx.beginPath(); ctx.ellipse(x, y, 70, 24, 0, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(x+50, y+10, 55, 20, 0, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(x-45, y+10, 55, 20, 0, 0, Math.PI*2); ctx.fill();
   }
 
+  // decor: máy bay lớn bay ngang
+  const tt = sky.decorT || 0;
+  const planeX = (W+260) - ((tt*240)%(W+520));
+  const planeY = 110 + Math.sin(tt*3.0)*10;
+  ctx.save();
+  ctx.translate(planeX, planeY);
+  ctx.scale(1.6,1.6);
+  ctx.fillStyle="rgba(255,255,255,.85)";
+  ctx.beginPath(); ctx.ellipse(0,0,34,10,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="rgba(15,23,42,.55)";
+  ctx.fillRect(-8,-3,16,6);
+  ctx.fillStyle="rgba(255,255,255,.92)";
+  ctx.beginPath(); ctx.moveTo(-12,0); ctx.lineTo(-28,-10); ctx.lineTo(-24,0); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-6,0); ctx.lineTo(8,-14); ctx.lineTo(18,0); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(6,0); ctx.lineTo(22,10); ctx.lineTo(12,0); ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  // chim vàng (collect)
   for(const bd of sky.birds){
     if(bd.taken) continue;
     const x = Math.round(bd.x - camX);
@@ -2341,21 +2376,47 @@ function drawSky(){
     ctx.stroke();
   }
 
+  // enemies: máy bay nhỏ / khủng long bay (đổi màu rõ ràng)
   for(const e of sky.enemies){
     if(!e.alive) continue;
     const x = Math.round(e.x - camX);
     const y = Math.round(e.y);
-    if(x<-80||x>W+80) continue;
-    ctx.fillStyle="rgba(17,24,39,.55)";
-    ctx.beginPath(); ctx.ellipse(x+15,y+9,16,9,0,0,Math.PI*2); ctx.fill();
+    if(x<-120||x>W+120) continue;
+
+    if(e.kind==="plane"){
+      ctx.fillStyle="rgba(255,255,255,.80)";
+      ctx.beginPath(); ctx.ellipse(x+16,y+10,18,7,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="rgba(15,23,42,.55)";
+      ctx.fillRect(x+10,y+8,12,4);
+      ctx.fillStyle="rgba(250,204,21,.92)";
+      ctx.beginPath(); ctx.moveTo(x+6,y+10); ctx.lineTo(x-10,y+2); ctx.lineTo(x-6,y+10); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x+12,y+10); ctx.lineTo(x+22,y-2); ctx.lineTo(x+30,y+10); ctx.closePath(); ctx.fill();
+    } else {
+      // khủng long bay (pterodactyl style)
+      ctx.strokeStyle="rgba(17,24,39,.75)";
+      ctx.lineWidth=5;
+      ctx.beginPath();
+      ctx.moveTo(x+4,y+12);
+      ctx.quadraticCurveTo(x+16,y+0,x+28,y+12);
+      ctx.stroke();
+      ctx.lineWidth=2;
+      ctx.strokeStyle="rgba(255,255,255,.65)";
+      ctx.beginPath();
+      ctx.moveTo(x+6,y+12);
+      ctx.quadraticCurveTo(x+16,y+3,x+26,y+12);
+      ctx.stroke();
+      ctx.fillStyle="rgba(250,204,21,.85)";
+      ctx.beginPath(); ctx.arc(x+16,y+10,4,0,Math.PI*2); ctx.fill();
+    }
+    ctx.lineWidth=1;
   }
 
   for(const s of sky.sparkle){
-    const x = Math.round(s.x - camX);
-    const y = Math.round(s.y);
+    const sx = Math.round(s.x - camX);
+    const sy = Math.round(s.y);
     ctx.globalAlpha=Math.max(0,s.life/30);
     ctx.fillStyle=s.color;
-    ctx.beginPath(); ctx.arc(x,y,s.r,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx,sy,s.r,0,Math.PI*2); ctx.fill();
     ctx.globalAlpha=1;
   }
 
@@ -2379,7 +2440,7 @@ function drawSky(){
     const fx=p.facing===1?px+16:px+2;
     ctx.fillRect(fx,py+10,10,10);
 
-    ctx.fillStyle="rgba(255,255,255,.35)";
+    ctx.fillStyle="rgba(255,255,255,.45)";
     ctx.beginPath();
     ctx.moveTo(px+2,py+18);
     ctx.lineTo(px-16,py+10);
@@ -2422,6 +2483,10 @@ function loseLife(reason){
   } else {
     if(state!=="playing") return;
     if(player.invincibleFrames>0||player.immuneFrames>0){ showMsg("Miễn nhiễm!",30); return; }
+    if(player.snake){
+      consumeSnake(reason||"Đòn đánh");
+      return;
+    }
   }
 
   lives--; sfxHit();
@@ -2791,11 +2856,52 @@ function drawWorld(){
 }
 
 /* PLAYER DRAW */
+function drawSnakeRide(px,py,dir){
+  // vẽ rắn phía dưới nhân vật (decor + shield)
+  const headX = px + (dir===1? -6 : 34);
+  const headY = py + 34;
+  ctx.strokeStyle="rgba(34,197,94,.85)";
+  ctx.lineWidth=6;
+  ctx.beginPath();
+  ctx.moveTo(px+14, py+44);
+  ctx.quadraticCurveTo(px+14 - dir*18, py+54, px+14 - dir*36, py+46);
+  ctx.quadraticCurveTo(px+14 - dir*54, py+38, px+14 - dir*72, py+50);
+  ctx.stroke();
+  ctx.lineWidth=1;
+
+  ctx.fillStyle="rgba(34,197,94,.92)";
+  ctx.beginPath(); ctx.ellipse(headX, headY, 10, 7, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle="rgba(0,0,0,.35)";
+  ctx.fillRect(headX + (dir===1?3:-5), headY-2, 2,2);
+  ctx.strokeStyle="rgba(250,204,21,.85)";
+  ctx.beginPath();
+  ctx.moveTo(headX, headY+2);
+  ctx.lineTo(headX + (dir===1?14:-14), headY+4);
+  ctx.stroke();
+}
+
 function drawPlayer(){
   const skin=charMeta().colors;
   const px=Math.round(player.x-cameraX), py=Math.round(player.y);
   const blink=(player.immuneFrames>0)&&(Math.floor(performance.now()/80)%2===0);
   if(blink) return;
+
+  // snake ride behind player
+  if(player.snake){
+    ctx.globalAlpha = player.snakeFlash>0 ? 0.35 + 0.35*Math.sin((30-player.snakeFlash)*0.6) : 1;
+    drawSnakeRide(px,py,player.facing);
+    ctx.globalAlpha = 1;
+  }
+
+  // phase aura
+  if(player.phaseFrames>0){
+    ctx.strokeStyle="rgba(148,163,184,.55)";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.arc(px+player.w/2,py+player.h/2,28,0,Math.PI*2);
+    ctx.stroke();
+    ctx.lineWidth=1;
+  }
 
   ctx.fillStyle="rgba(0,0,0,.16)";
   ctx.beginPath();
@@ -3045,7 +3151,8 @@ shopListEl.addEventListener("click",(e)=>{
     u.ownedChars[id]=true;
     setUsers(getUsers().map(x=>x.user===u.user?u:x));
     sfxCoin();
-    showMsg(`Đã mua NV ${CHARACTERS[id].name}!`, 80);
+    lastSkillFrame=-9999; // READY ngay khi mua
+    showMsg(`Đã mua NV ${CHARACTERS[id].name}! (Skill READY)`, 90);
     renderShop();
     renderHUD();
     if(listOverlay.style.display!=="none"){
@@ -3059,8 +3166,8 @@ shopListEl.addEventListener("click",(e)=>{
     charId=id;
     u.char=id;
     setUsers(getUsers().map(x=>x.user===u.user?u:x));
-    lastSkillFrame=playFrames; // reset CD khi đổi
-    showMsg(`Đang dùng NV ${CHARACTERS[id].name} (skill hồi 60s)`, 90);
+    lastSkillFrame=-9999; // READY ngay khi đổi
+    showMsg(`Đang dùng NV ${CHARACTERS[id].name} (Skill READY)`, 90);
     renderShop();
     renderHUD();
     if(listOverlay.style.display!=="none"){
@@ -3137,6 +3244,7 @@ function afterAuth(user){
   userName=user;
   ensureUserStatsFor(userName);
   syncProfileCache();
+  lastSkillFrame=-9999;
   startGameFresh();
 }
 loginBtn.addEventListener("click",()=>{
@@ -3189,6 +3297,7 @@ function init(){
     userName=s.user;
     ensureUserStatsFor(userName);
     syncProfileCache();
+    lastSkillFrame=-9999;
     startGameFresh();
   } else {
     showStart();
