@@ -42,7 +42,7 @@
       -webkit-overflow-scrolling:touch;
     }
     .panel{
-      width:min(980px, 96%);
+      width:min(1100px, 96%);
       background:rgba(16,18,22,.94);
       border:1px solid rgba(255,255,255,.12);
       border-radius:18px;
@@ -58,7 +58,7 @@
 
     h1{ margin:0 0 10px 0; font-size:22px; letter-spacing:.2px; }
     h2{ margin:0 0 8px 0; font-size:14px; color:#e5e7eb; }
-    .muted{ color:#b6c2d2; font-size:13px; line-height:1.35; }
+    .muted{ color:#b6c2d2; font-size:13px; line-height:1.45; }
     .controls{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; }
     .btn{
       appearance:none; border:0; cursor:pointer;
@@ -207,6 +207,260 @@
     .touch-btn.circle{ border-radius:999px; }
     .touch-btn:active{ transform:translateY(1px) scale(.98); box-shadow:0 3px 10px rgba(0,0,0,.65); }
     @media (max-width:640px){ .touch-btn{ min-width:48px; min-height:42px; font-size:13px; } }
+
+    .introPanel{
+      width:min(1180px, 97%);
+      background:
+        radial-gradient(circle at top right, rgba(34,197,94,.10), transparent 30%),
+        radial-gradient(circle at bottom left, rgba(59,130,246,.10), transparent 32%),
+        rgba(16,18,22,.96);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:24px;
+      padding:18px;
+      box-shadow:0 16px 50px rgba(0,0,0,.6);
+      color:#e8edf5;
+      max-height:calc(100vh - 24px);
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    .introRow{
+      display:grid;
+      grid-template-columns: .95fr 1.25fr;
+      gap:16px;
+      align-items:stretch;
+    }
+    @media (max-width:980px){
+      .introRow{ grid-template-columns:1fr; }
+    }
+    .introCard{
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:20px;
+      padding:18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .introCard::before{
+      content:"";
+      position:absolute; inset:auto -40px -40px auto;
+      width:120px; height:120px; border-radius:50%;
+      background:rgba(255,255,255,.04);
+      filter:blur(2px);
+    }
+    .profileHero{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .avatarBox{
+      width:84px; height:84px;
+      border-radius:22px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:34px; font-weight:1000;
+      color:#fff;
+      background:linear-gradient(135deg,#22c55e,#0ea5e9,#8b5cf6);
+      box-shadow:0 10px 28px rgba(34,197,94,.22);
+      flex:0 0 auto;
+    }
+    .heroTitle{
+      margin:0;
+      font-size:26px;
+      line-height:1.1;
+      font-weight:1000;
+    }
+    .heroSub{
+      margin-top:6px;
+      color:#cbd5e1;
+      font-size:13px;
+      line-height:1.4;
+    }
+    .infoGrid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-top:14px;
+    }
+    .infoItem{
+      padding:12px 14px;
+      border-radius:14px;
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .infoLabel{
+      font-size:11px;
+      color:#94a3b8;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      margin-bottom:4px;
+    }
+    .infoValue{
+      font-size:15px;
+      color:#fff;
+      font-weight:800;
+      line-height:1.35;
+    }
+    .socialGrid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-top:14px;
+    }
+    .socialLink{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      text-decoration:none;
+      color:#fff;
+      padding:12px 14px;
+      border-radius:14px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      transition:.18s ease;
+    }
+    .socialLink:hover{
+      transform:translateY(-2px);
+      background:rgba(255,255,255,.08);
+      border-color:rgba(255,255,255,.18);
+    }
+    .socialIcon{
+      width:40px; height:40px;
+      border-radius:12px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:1000;
+      font-size:16px;
+      flex:0 0 auto;
+      background:rgba(255,255,255,.10);
+    }
+    .fb .socialIcon{ background:rgba(59,130,246,.24); }
+    .ig .socialIcon{ background:rgba(236,72,153,.22); }
+    .tt .socialIcon{ background:rgba(15,23,42,.85); }
+    .socialText strong{
+      display:block;
+      font-size:14px;
+      margin-bottom:2px;
+    }
+    .socialText span{
+      color:#aebacd;
+      font-size:12px;
+      line-height:1.35;
+      word-break:break-word;
+    }
+    .welcomeTitle{
+      margin:0;
+      font-size:34px;
+      line-height:1.05;
+      font-weight:1000;
+    }
+    .welcomeLead{
+      margin-top:10px;
+      color:#cbd5e1;
+      font-size:14px;
+      line-height:1.6;
+      max-width:760px;
+    }
+    .introBadgeRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .introBadge{
+      padding:7px 11px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      color:#fff;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .introSteps{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+    @media (max-width:760px){
+      .introSteps{ grid-template-columns:1fr; }
+    }
+    .stepCard{
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      padding:14px;
+      min-height:120px;
+    }
+    .stepNo{
+      width:32px; height:32px;
+      border-radius:12px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px; font-weight:1000;
+      color:#04120a;
+      background:#22c55e;
+      margin-bottom:10px;
+      box-shadow:0 8px 18px rgba(34,197,94,.22);
+    }
+    .stepTitle{
+      font-size:15px;
+      font-weight:900;
+      color:#fff;
+      margin-bottom:6px;
+    }
+    .stepText{
+      color:#b6c2d2;
+      font-size:13px;
+      line-height:1.5;
+    }
+    .controlGrid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+    @media (max-width:760px){
+      .controlGrid{ grid-template-columns:1fr; }
+    }
+    .controlCard{
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      padding:14px;
+    }
+    .controlTitle{
+      font-size:13px;
+      font-weight:1000;
+      color:#f8fafc;
+      margin-bottom:8px;
+      letter-spacing:.2px;
+      text-transform:uppercase;
+    }
+    .startWrap{
+      margin-top:18px;
+      display:flex;
+      justify-content:flex-end;
+      align-items:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .startBtnBig{
+      border:0;
+      cursor:pointer;
+      min-width:220px;
+      padding:14px 20px;
+      border-radius:16px;
+      background:linear-gradient(135deg,#22c55e,#16a34a);
+      color:#04120a;
+      font-size:16px;
+      font-weight:1000;
+      box-shadow:0 16px 32px rgba(34,197,94,.24);
+    }
+    .startHint{
+      color:#94a3b8;
+      font-size:12px;
+      text-align:right;
+      line-height:1.45;
+    }
   </style>
 </head>
 <body>
@@ -255,7 +509,160 @@
       </div>
     </div>
 
-    <div class="overlay" id="startOverlay">
+    <div class="overlay" id="introOverlay">
+      <div class="introPanel">
+        <div class="introRow">
+          <div class="introCard">
+            <div class="profileHero">
+              <div class="avatarBox">TM</div>
+              <div>
+                <h1 class="heroTitle">Thông tin tác giả</h1>
+                <div class="heroSub">
+                  Giao diện giới thiệu cá nhân nằm bên trái để dễ nhận diện trước khi vào game.
+                </div>
+              </div>
+            </div>
+
+            <div class="infoGrid">
+              <div class="infoItem">
+                <div class="infoLabel">Trường</div>
+                <div class="infoValue">Trường Đại Học Phan Thiết</div>
+              </div>
+              <div class="infoItem">
+                <div class="infoLabel">Họ và tên</div>
+                <div class="infoValue">Trần Ngọc Mẫn</div>
+              </div>
+              <div class="infoItem">
+                <div class="infoLabel">Lớp</div>
+                <div class="infoValue">K15THO2</div>
+              </div>
+              <div class="infoItem">
+                <div class="infoLabel">MSSV</div>
+                <div class="infoValue">K15THO0069</div>
+              </div>
+            </div>
+
+            <div style="margin-top:16px;">
+              <h2>Kết nối cá nhân</h2>
+              <div class="muted">Nhấp vào từng mục bên dưới để mở trang cá nhân tương ứng.</div>
+              <div class="socialGrid">
+                <a class="socialLink fb" href="https://www.facebook.com/munnehiu" target="_blank" rel="noopener noreferrer">
+                  <div class="socialIcon">f</div>
+                  <div class="socialText">
+                    <strong>Facebook</strong>
+                    <span>facebook.com/munnehiu</span>
+                  </div>
+                </a>
+                <a class="socialLink ig" href="https://www.instagram.com/muniu_13" target="_blank" rel="noopener noreferrer">
+                  <div class="socialIcon">IG</div>
+                  <div class="socialText">
+                    <strong>Instagram</strong>
+                    <span>instagram.com/muniu_13</span>
+                  </div>
+                </a>
+                <a class="socialLink tt" href="https://www.tiktok.com/@munne_13?_r=1&_d=secCgYIASAHKAESPgo8eno486fzB6NBH3aRFmF36ms9IVVVGuc0RIP8yQehgzjAaTDxAAXrVruP43BeDrIYBr4%2Bi3t3rG9yJnl8GgA%3D&_svg=1&checksum=e22dd429b8cc2dc2de8e1887718bdab97bf6dc7be856783744bf7742f2e6be55&item_author_type=1&sec_uid=MS4wLjABAAAAhN5VNeYNeqGOnm-m3k_CWzC532p94yer7k8BpkOTW3J3bMAqd85_cRiOK_Kmk_4E&sec_user_id=MS4wLjABAAAAhN5VNeYNeqGOnm-m3k_CWzC532p94yer7k8BpkOTW3J3bMAqd85_cRiOK_Kmk_4E&share_app_id=1180&share_author_id=7383580418367357969&share_link_id=E122B4B9-E643-4635-9AA5-161444B0D3FB&share_region=VN&share_scene=1&sharer_language=vi&social_share_type=4&source=h5_t&timestamp=1773131007&tt_from=copy&u_code=eel650bdd1kbll&ug_btm=b8727%2Cb0&user_id=7383580418367357969&utm_campaign=client_share&utm_medium=ios&utm_source=copy" target="_blank" rel="noopener noreferrer">
+                  <div class="socialIcon">TT</div>
+                  <div class="socialText">
+                    <strong>TikTok</strong>
+                    <span>@munne_13</span>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="introCard">
+            <h1 class="welcomeTitle">Chào mừng đến với<br/>Mini Mario — 7 Map Việt Nam</h1>
+            <div class="welcomeLead">
+              Đây là màn hình giới thiệu trước khi vào game. Nhấn <b>BẮT ĐẦU</b> ở góc dưới bên phải để chuyển sang trang <b>đăng nhập / đăng ký</b> như code bạn đã làm. Trò chơi gồm 7 bản đồ theo địa danh Việt Nam, có thay đổi thời tiết, thời gian và kỹ năng theo nhân vật.
+            </div>
+
+            <div class="introBadgeRow">
+              <div class="introBadge">7 bản đồ Việt Nam</div>
+              <div class="introBadge">Thời tiết: nắng, gió, mưa, tuyết</div>
+              <div class="introBadge">3 nhân vật kỹ năng</div>
+              <div class="introBadge">Shop mua bằng xu</div>
+            </div>
+
+            <div class="introSteps">
+              <div class="stepCard">
+                <div class="stepNo">1</div>
+                <div class="stepTitle">Mục tiêu</div>
+                <div class="stepText">
+                  Điều khiển nhân vật vượt chướng ngại vật, né quái, thu thập xu và chạm cờ cuối màn để sang map tiếp theo.
+                </div>
+              </div>
+              <div class="stepCard">
+                <div class="stepNo">2</div>
+                <div class="stepTitle">Cách thắng</div>
+                <div class="stepText">
+                  Hoàn thành lần lượt 7 map: Hạ Long, Đà Lạt, Sa Pa, Phan Thiết, Sài Gòn, Nha Trang và Vũng Tàu.
+                </div>
+              </div>
+              <div class="stepCard">
+                <div class="stepNo">3</div>
+                <div class="stepTitle">Xu và shop</div>
+                <div class="stepText">
+                  Nhặt xu trong màn để tích điểm và mua nhân vật trong shop. Mỗi nhân vật có kỹ năng riêng và đổi xong sẽ hồi skill ngay.
+                </div>
+              </div>
+              <div class="stepCard">
+                <div class="stepNo">4</div>
+                <div class="stepTitle">Lưu dữ liệu</div>
+                <div class="stepText">
+                  Tài khoản, điểm cao, số xu và nhân vật đang dùng được lưu trực tiếp trên thiết bị bằng localStorage.
+                </div>
+              </div>
+            </div>
+
+            <div class="controlGrid">
+              <div class="controlCard">
+                <div class="controlTitle">Điều khiển trên PC</div>
+                <div class="muted">
+                  Di chuyển: <span class="kbd">←</span><span class="kbd">→</span><br/>
+                  Nhảy: <span class="kbd">Space</span> hoặc <span class="kbd">↑</span><br/>
+                  Bắn: <span class="kbd">C</span><br/>
+                  Dùng skill: <span class="kbd">X</span><br/>
+                  Reset màn: <span class="kbd">R</span>
+                </div>
+              </div>
+              <div class="controlCard">
+                <div class="controlTitle">Điều khiển trên điện thoại</div>
+                <div class="muted">
+                  Dùng các nút ảo dưới màn hình gồm <b>←</b> <b>→</b> <b>JUMP</b> <b>FIRE</b> <b>SKILL</b> để chơi.
+                </div>
+              </div>
+            </div>
+
+            <div class="controlGrid">
+              <div class="controlCard">
+                <div class="controlTitle">Kỹ năng nhân vật</div>
+                <div class="muted">
+                  <b>ĐỎ</b>: Nhảy cao 10s +1 tim<br/>
+                  <b>XANH</b>: Bất tử 10s<br/>
+                  <b>TÍM</b>: Cưỡi rắn bảo vệ (hồi chiêu 60s)
+                </div>
+              </div>
+              <div class="controlCard">
+                <div class="controlTitle">Lưu ý khi chơi</div>
+                <div class="muted">
+                  Tránh rơi xuống nước, dính gai hoặc chạm quái. Một số hộp đen sẽ làm chậm, còn hộp hỏi chấm sẽ cho vật phẩm ngẫu nhiên.
+                </div>
+              </div>
+            </div>
+
+            <div class="startWrap">
+              <div class="startHint">
+                Nhấn nút để chuyển sang màn hình đăng ký / đăng nhập
+              </div>
+              <button class="startBtnBig" id="introStartBtn">BẮT ĐẦU</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="startOverlay" style="display:none;">
       <div class="panel">
         <div class="row">
           <div class="card">
@@ -411,6 +818,9 @@ const isTouchDevice =
   ("ontouchstart" in window) ||
   (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
   (navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 0);
+
+const introOverlay = document.getElementById("introOverlay");
+const introStartBtn = document.getElementById("introStartBtn");
 
 const startOverlay = document.getElementById("startOverlay");
 const listOverlay  = document.getElementById("listOverlay");
@@ -668,7 +1078,7 @@ function syncAmbienceToState(){
   }
 }
 
-let state="start";
+let state="intro";
 let lives=3;
 const START_LIVES=3;
 let MAX_LIVES=5;
@@ -1875,6 +2285,7 @@ function startGameFresh(){
   lastSkillFrame=-9999;
   resetLevelToCurrent(true,true);
   state="playing";
+  introOverlay.style.display="none";
   startOverlay.style.display="none";
   listOverlay.style.display="none";
   shopOverlay.style.display="none";
@@ -2531,8 +2942,24 @@ function update(){
   requestAnimationFrame(update);
 }
 
+function showIntro(){
+  state="intro";
+  introOverlay.style.display="flex";
+  startOverlay.style.display="none";
+  listOverlay.style.display="none";
+  shopOverlay.style.display="none";
+  endOverlay.style.display="none";
+  hud.style.display="none";
+  topButtons.style.display="none";
+  renderRank(leaderList);
+  renderRank(leaderList2);
+  renderRank(leaderListIngame);
+  stopAmbience();
+  stopMusic();
+}
 function showStart(){
   state="start";
+  introOverlay.style.display="none";
   startOverlay.style.display="flex";
   listOverlay.style.display="none";
   shopOverlay.style.display="none";
@@ -2625,6 +3052,7 @@ function openShop(){
   ensureAudio();
   prevStateBeforeShop = state;
   shopOverlay.style.display="flex";
+  introOverlay.style.display="none";
   startOverlay.style.display="none";
   listOverlay.style.display="none";
   endOverlay.style.display="none";
@@ -2642,6 +3070,9 @@ function closeShop(){
     endOverlay.style.display="flex";
   } else if(prevStateBeforeShop==="start"){
     showStart();
+    return;
+  } else if(prevStateBeforeShop==="intro"){
+    showIntro();
     return;
   } else {
     state="playing";
@@ -2709,9 +3140,14 @@ openShopBtn.addEventListener("click",()=>{ ensureAudio(); prevStateBeforeShop="l
 closeShopBtn.addEventListener("click",()=>closeShop());
 openShopBtnEnd.addEventListener("click",()=>{ ensureAudio(); prevStateBeforeShop="end"; openShop(); });
 
-logoutBtn.addEventListener("click",()=>{ clearSession(); showStart(); });
+logoutBtn.addEventListener("click",()=>{ clearSession(); showIntro(); });
 backToStartBtn.addEventListener("click",()=>showStart());
 playAgainBtn.addEventListener("click",()=>startGameFresh());
+
+introStartBtn.addEventListener("click",()=>{
+  ensureAudio();
+  showStart();
+});
 
 function clearAllRankAndStats(){
   try{localStorage.removeItem(RANK_KEY)}catch{}
@@ -2814,7 +3250,7 @@ function init(){
     lastSkillFrame=-9999;
     startGameFresh();
   } else {
-    showStart();
+    showIntro();
   }
   resetLevelToCurrent(true,true);
   renderHUD();
